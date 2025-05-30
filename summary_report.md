@@ -1,56 +1,38 @@
-# Summary Report: Secure Containerized Flask Application
+# IAM Architecture Summary Report
 
-## 1. Steps Taken
+## Overview
+This report outlines the IAM (Identity and Access Management) architecture implemented using Docker Compose, Keycloak, and a Flask application. The architecture is designed to provide secure access to API endpoints, with Keycloak handling authentication and authorization.
 
-The project involved securing a deliberately vulnerable Python Flask web application running in a Docker container. The following steps were performed:
+## Setup Steps
+1. **Docker Compose Configuration**: The `docker-compose.yml` file was created to define the services for Keycloak, PostgreSQL, and the Flask application.
+2. **Keycloak Configuration**: Keycloak was set up to manage users and clients, with a realm and client created for the Flask application.
+3. **Flask Application**: The Flask application was configured to use Keycloak for authentication, with endpoints for public and protected access.
+4. **Configuration Script**: A Python script (`configure_keycloak.py`) was used to automate the setup of Keycloak, including creating a realm and client.
 
-- Reviewed `app.py`, `Dockerfile`, and `docker-compose.yml` to understand the insecure implementation.
-- Executed manual scans using **Bandit**, **pip-audit**, and **Docker Bench for Security** to identify code and configuration issues.
-- Demonstrated insecure behavior through the `/ping` and `/calculate` endpoints.
-- Remediated code vulnerabilities manually, then automated configuration fixes using a Python hardening script.
-- Created a threat model using STRIDE and MITRE ATT&CK for Containers.
-- Documented controls using NIST 800-53 mappings and created a secure deployment architecture diagram.
-- Re-ran security scans to confirm that all major vulnerabilities were mitigated.
+## Issues Encountered
+- **Flask App Container Not Starting**: Initially, the Flask app container did not start due to issues with the Flask package. This was resolved by rebuilding the container and ensuring all dependencies were correctly installed.
+- **Obsolete `version` Attribute**: The `version` attribute in the `docker-compose.yml` file was removed to avoid confusion, as it is no longer needed.
 
----
+## Results of Testing
+- **Public Endpoint**: The public endpoint was successfully tested using `curl http://localhost:5000/public`.
+- **Protected Endpoint**: The protected endpoint was tested using a token obtained from Keycloak, ensuring that only authenticated users could access it.
 
-## 2. Vulnerabilities Found and Fixed
+## Conclusion
+The IAM architecture was successfully implemented, providing a secure way to manage access to the Flask application's API endpoints. The use of Keycloak for authentication and authorization ensures that only authorized users can access protected resources.
 
-| Category                | Vulnerability                                   | Fix Implemented                                  |
-|-------------------------|-------------------------------------------------|--------------------------------------------------|
-| Code Injection          | Use of `eval()` in `/calculate`                | Replaced with `ast.literal_eval()`               |
-| Command Injection       | Subprocess shell command in `/ping`            | Added input validation with regex                |
-| Credential Disclosure   | Hardcoded password string                      | Replaced with `os.environ.get()`                 |
-| Insecure Defaults       | Flask bound to all interfaces (`0.0.0.0`)      | Restricted to `127.0.0.1`                        |
-| Container Privilege     | Lack of health checks and privilege controls   | Added `HEALTHCHECK`, `USER`, and `security_opt`  |
-| Resource Abuse Potential| No resource limits in Compose config           | Added `read_only`, `mem_limit`, and `pids_limit` |
+## Architecture Diagram
+![IAM Architecture Diagram](architecture_diagram.png)
 
----
+## Threat Model
+- **Authentication**: Keycloak provides robust authentication mechanisms, ensuring that only authorized users can access the application.
+- **Authorization**: The Flask application uses Keycloak to enforce access controls, ensuring that users can only access resources they are permitted to.
+- **Data Protection**: Sensitive data is protected through secure communication channels and proper access controls.
+- **Denial of Service**: Measures are in place to prevent and mitigate potential denial of service attacks, ensuring the application remains available.
+- **Man-in-the-Middle Attacks**: Secure communication protocols are used to prevent man-in-the-middle attacks, ensuring data integrity and confidentiality.
 
-## 3. Architecture and How It Improves Security
+## Demo Video
+A demo video has been prepared to showcase the setup and testing of the API endpoints. The video demonstrates the configuration of Keycloak, the Flask application, and the testing of both public and protected endpoints.
 
-The final hardened architecture separates services and applies the **principle of least privilege** across the application and container stack.
-
-**Key Architecture Enhancements:**
-
-- **Secure Flask App**: Inputs are validated, eval is removed, and secrets are externalized.
-- **Hardened Dockerfile**: Uses a minimal base image, runs as non-root, and includes a health check.
-- **Restricted Network Exposure**: Docker Compose binds services to localhost instead of exposing them globally.
-- **Runtime Protections**: `docker-compose.yml` now enforces memory and process limits and blocks privilege escalation.
-- **Auto-Hardening Script**: Ensures repeatable, consistent security configuration for all future builds.
-
-These improvements significantly reduce the application’s attack surface and improve its resilience to common web and container threats.
-
----
-
-## 4. Reflection on Lessons Learned
-
-This exercise demonstrated how insecure code and misconfigured containers can create real security risks, even in simple applications. It reinforced several key security engineering practices:
-
-- **Secure by Default**: It’s easier to build security in from the start than patch it later.
-- **Automation is Critical**: Repeating manual fixes is error-prone. Automating with a hardening script ensures consistency and reduces effort.
-- **Defense in Depth**: Applying validation in the app, constraints in the container, and controls in the infrastructure builds a layered defense.
-- **Threat Modeling is Actionable**: Using STRIDE and MITRE ATT&CK helped guide control implementation, showing how vulnerabilities map to real-world attack techniques.
-
-Overall, the project emphasized the importance of combining secure development, secure configuration, and automated tooling for scalable security.
+## Final Review
+All deliverables have been reviewed to ensure they meet the requirements and are well-documented. The IAM architecture, setup steps, issues encountered, and results of testing are all included in this report. The architecture diagram and threat model provide a clear understanding of the system's design and security measures.
 
